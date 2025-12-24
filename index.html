@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>WhatsApp – Mobile Shop Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      background: #111;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 420px;
+      height: 90vh;
+      background: #111b21;
+      border-radius: 18px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #202c33;
+    }
+
+    /* Header */
+    .header {
+      background: #202c33;
+      color: #e9edef;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .shop-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #25d366, #128c7e);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .shop-info h2 {
+      font-size: 16px;
+      margin-bottom: 2px;
+    }
+
+    .shop-info span {
+      font-size: 12px;
+      color: #8696a0;
+    }
+
+    /* Chat area */
+    .chat {
+      flex: 1;
+      padding: 10px;
+      background: url("https://i.imgur.com/Y4MZQqT.png") repeat; /* generic chat bg */
+      background-size: 280px;
+      overflow-y: auto;
+    }
+
+    .msg-row {
+      display: flex;
+      margin-bottom: 8px;
+      max-width: 85%;
+    }
+
+    .msg-row.you {
+      justify-content: flex-end;
+      margin-left: auto;
+    }
+
+    .bubble {
+      padding: 7px 9px;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.3;
+      position: relative;
+      color: #e9edef;
+    }
+
+    .bubble.shop {
+      background: #202c33;
+      border-bottom-left-radius: 0;
+    }
+
+    .bubble.you {
+      background: #005c4b;
+      border-bottom-right-radius: 0;
+    }
+
+    .time {
+      font-size: 10px;
+      color: #8696a0;
+      margin-top: 3px;
+      text-align: right;
+    }
+
+    /* Input area */
+    .input-area {
+      background: #202c33;
+      padding: 7px 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .input-area input {
+      flex: 1;
+      padding: 9px 12px;
+      background: #111b21;
+      border: none;
+      border-radius: 18px;
+      color: #e9edef;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .send-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: #00a884;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    .quick-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 6px 8px 4px;
+      background: #111b21;
+      border-top: 1px solid #202c33;
+    }
+
+    .quick-btn {
+      padding: 4px 10px;
+      font-size: 11px;
+      border-radius: 20px;
+      border: 1px solid #00a884;
+      background: transparent;
+      color: #e9edef;
+      cursor: pointer;
+    }
+
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #374045;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div class="shop-avatar">MS</div>
+      <div class="shop-info">
+        <h2>Akram Mobile Shop</h2>
+        <span>Typically replies in 5–10 minutes</span>
+      </div>
+    </div>
+
+    <div class="chat" id="chat">
+      <!-- initial welcome message -->
+    </div>
+
+    <div class="quick-buttons">
+      <button class="quick-btn" data-text="Show latest phones">
+        Latest phones
+      </button>
+      <button class="quick-btn" data-text="What is today’s offer?">
+        Today’s offer
+      </button>
+      <button class="quick-btn" data-text="Do you have EMI option?">
+        EMI options
+      </button>
+      <button class="quick-btn" data-text="Shop address and timing">
+        Address & timing
+      </button>
+    </div>
+
+    <div class="input-area">
+      <input
+        type="text"
+        id="userInput"
+        placeholder="Type a message"
+        autocomplete="off"
+      />
+      <button class="send-btn" id="sendBtn">➤</button>
+    </div>
+  </div>
+
+  <script>
+    const chat = document.getElementById("chat");
+    const input = document.getElementById("userInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const quickBtns = document.querySelectorAll(".quick-btn");
+
+    // Helper: current time like WhatsApp
+    function getTime() {
+      const d = new Date();
+      let h = d.getHours();
+      let m = d.getMinutes().toString().padStart(2, "0");
+      return h + ":" + m;
+    }
+
+    function addMessage(text, sender = "shop") {
+      const row = document.createElement("div");
+      row.classList.add("msg-row");
+      if (sender === "you") row.classList.add("you");
+
+      const bubble = document.createElement("div");
+      bubble.classList.add("bubble");
+      bubble.classList.add(sender === "you" ? "you" : "shop");
+      bubble.innerText = text;
+
+      const time = document.createElement("div");
+      time.classList.add("time");
+      time.innerText = getTime();
+
+      bubble.appendChild(time);
+      row.appendChild(bubble);
+      chat.appendChild(row);
+
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    // Simple rule-based replies for mobile shop
+    function generateReply(message) {
+      const msg = message.toLowerCase();
+
+      if (msg.includes("hello") || msg.includes("hi")) {
+        return "assalamualaikum 👋, Akram Mobile Shop mein aapka swagat hai! Aap ko kis type ka phone chahiye – budget, mid-range ya flagship?";
+      }
+
+      if (msg.includes("latest") || msg.includes("new phone")) {
+        return "Filhaal hamare paas latest 5G smartphones available hain, jaise Samsung Galaxy A-series, Redmi Note series aur Realme Narzo models. Aapka budget kitna hai?";
+      }
+
+      if (msg.includes("offer") || msg.includes("discount")) {
+        return "Aaj ke offer mein selected models par flat ₹1,000 off hai, saath hi accessories par 10–15% discount mil raha hai.";
+      }
+
+      if (msg.includes("emi") || msg.includes("installment")) {
+        return "Haan, EMI available hai credit card aur select finance partners par. Aapko approx monthly budget kitna chahiye?";
+      }
+
+      if (msg.includes("address") || msg.includes("location") || msg.includes("timing")) {
+        return "Hamari shop: "Akram Mobile Shop, Kashmir, baramulla" (demo address). Timing: Roz subah 10 baje se raat 9 baje tak.";
+      }
+
+      if (msg.includes("iphone")) {
+        return "iPhone ke liye hamare paas iPhone 13, 14 aur 15 series available hain, limited stock ke saath. Aap kaunsa model dekh rahe hain?";
+      }
+
+      if (msg.includes("budget") || msg.includes("under") || msg.includes("rs") || msg.includes("₹")) {
+        return "Budget range ke hisaab se ham aapko 2–3 best options suggest kar sakte hain. Kripya exact budget likhiye, jaise "under 15000" ya "under 25000".";
+      }
+
+      return "Dhanyavaad, aapka message mil gaya. Thodi der mein hamara representative aapse WhatsApp par detail mein baat karega. Aap apna budget aur preferred brand bhi bhej sakte hain.";
+    }
+
+    function handleSend() {
+      const text = input.value.trim();
+      if (!text) return;
+
+      addMessage(text, "you");
+      input.value = "";
+
+      setTimeout(() => {
+        const reply = generateReply(text);
+        addMessage(reply, "shop");
+      }, 600);
+    }
+
+    sendBtn.addEventListener("click", handleSend);
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleSend();
+      }
+    });
+
+    quickBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const text = btn.getAttribute("data-text");
+        input.value = text;
+        handleSend();
+      });
+    });
+
+    // Initial welcome message
+    window.addEventListener("load", () => {
+      addMessage(
+        "assalamualaikum 👋, Akram Mobile Shop se baat ho rahi hai. Latest 5G phones, EMI aur best offers ke liye message bhejiye."
+      );
+    });
+  </script>
+</body>
+</html>
